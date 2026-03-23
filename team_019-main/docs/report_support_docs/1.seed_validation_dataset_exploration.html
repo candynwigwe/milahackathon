@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Seed Validation Set – Full EDA</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --border: #30363d;
+    --accent: #2f81f7;
+    --accent2: #3fb950;
+    --accent3: #f78166;
+    --accent4: #d2a8ff;
+    --accent5: #ffa657;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --danger: #f85149;
+    --warn: #e3b341;
+    --card-r: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #161b22 0%, #1c2333 100%); border-bottom: 1px solid var(--border); padding: 28px 32px; }
+  .header h1 { font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+  .header p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .badge { display: inline-block; background: var(--accent); color: #fff; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; margin-left: 8px; vertical-align: middle; }
+  .container { max-width: 1300px; margin: 0 auto; padding: 24px 24px 60px; }
+
+  /* KPI CARDS */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-r); padding: 18px 20px; }
+  .kpi .val { font-size: 28px; font-weight: 700; line-height: 1; }
+  .kpi .lbl { color: var(--muted); font-size: 12px; margin-top: 4px; text-transform: uppercase; letter-spacing: .5px; }
+  .kpi .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .c-blue { color: var(--accent); } .c-green { color: var(--accent2); } .c-red { color: var(--danger); } .c-purple { color: var(--accent4); } .c-orange { color: var(--accent5); } .c-warn { color: var(--warn); }
+
+  /* SECTION */
+  .section-title { font-size: 16px; font-weight: 700; color: var(--text); margin: 32px 0 14px; display: flex; align-items: center; gap: 8px; }
+  .section-title::before { content:''; display: inline-block; width: 4px; height: 16px; background: var(--accent); border-radius: 2px; }
+
+  /* CHARTS GRID */
+  .chart-grid { display: grid; gap: 16px; }
+  .chart-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .chart-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .chart-grid.cols-1 { grid-template-columns: 1fr; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-r); padding: 20px; }
+  .card h3 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 14px; }
+  .chart-wrap { position: relative; }
+
+  /* INSIGHT BOXES */
+  .insight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .insight { background: var(--surface2); border-radius: 8px; padding: 14px 16px; border-left: 3px solid var(--accent); }
+  .insight.warn { border-color: var(--warn); }
+  .insight.danger { border-color: var(--danger); }
+  .insight.green { border-color: var(--accent2); }
+  .insight.purple { border-color: var(--accent4); }
+  .insight .title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+  .insight .body { font-size: 13px; color: var(--muted); }
+  .insight .body strong { color: var(--text); }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+  td { padding: 7px 10px; border-bottom: 1px solid #21262d; }
+  tr:last-child td { border-bottom: none; }
+  .bar-inline { display: inline-block; height: 6px; border-radius: 3px; background: var(--accent); vertical-align: middle; margin-left: 8px; }
+
+  /* STAT TABLE */
+  .stat-table { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  @media(max-width:900px) {
+    .chart-grid.cols-2, .chart-grid.cols-3 { grid-template-columns: 1fr; }
+    .insight-grid, .stat-table { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Seed Validation Set — Full Exploratory Data Analysis <span class="badge">94 rows</span></h1>
+  <p>Dataset: Mental health / safety conversation labeling · 7 features · Generated March 2026</p>
+</div>
+<div class="container">
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi"><div class="val c-blue">94</div><div class="lbl">Total Conversations</div></div>
+    <div class="kpi"><div class="val c-green">52</div><div class="lbl">Label 0 (Low Risk)</div><div class="sub">55.3% of dataset</div></div>
+    <div class="kpi"><div class="val c-red">42</div><div class="lbl">Label 1 (High Risk)</div><div class="sub">44.7% of dataset</div></div>
+    <div class="kpi"><div class="val c-orange">17.8</div><div class="lbl">Avg Turns</div><div class="sub">Range: 3–35</div></div>
+    <div class="kpi"><div class="val c-purple">604</div><div class="lbl">Avg Words/Conv</div><div class="sub">Max: 1,150 words</div></div>
+    <div class="kpi"><div class="val c-warn">10</div><div class="lbl">Categories</div><div class="sub">3 languages</div></div>
+    <div class="kpi"><div class="val c-green">0</div><div class="lbl">Null Values</div><div class="sub">No duplicates</div></div>
+    <div class="kpi"><div class="val c-red">64%</div><div class="lbl">Suicide → High Risk</div><div class="sub">Highest category rate</div></div>
+  </div>
+
+  <!-- DISTRIBUTION OVERVIEW -->
+  <div class="section-title">Label & Risk Distribution</div>
+  <div class="chart-grid cols-3">
+    <div class="card">
+      <h3>Label Distribution</h3>
+      <div class="chart-wrap"><canvas id="labelPie" height="200"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Risk Distribution</h3>
+      <div class="chart-wrap"><canvas id="riskPie" height="200"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Language Distribution</h3>
+      <div class="chart-wrap"><canvas id="langPie" height="200"></canvas></div>
+    </div>
+  </div>
+
+  <!-- CATEGORY BREAKDOWN -->
+  <div class="section-title">Category Analysis</div>
+  <div class="chart-grid cols-2">
+    <div class="card">
+      <h3>Category Counts</h3>
+      <div class="chart-wrap"><canvas id="catBar" height="280"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Label=1 Rate by Category (% High Risk)</h3>
+      <div class="chart-wrap"><canvas id="catRisk" height="280"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TURNS ANALYSIS -->
+  <div class="section-title">Conversation Turns — Distribution & Outliers</div>
+  <div class="chart-grid cols-2">
+    <div class="card">
+      <h3>Turns Histogram (all 94 convos)</h3>
+      <div class="chart-wrap"><canvas id="turnsHist" height="240"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Turns by Label (Box-style Comparison)</h3>
+      <div class="chart-wrap"><canvas id="turnsByLabel" height="240"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-grid cols-1" style="margin-top:16px">
+    <div class="card">
+      <h3>Avg Turns by Category</h3>
+      <div class="chart-wrap"><canvas id="turnsCat" height="180"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TEXT LENGTH ANALYSIS -->
+  <div class="section-title">Text Length & Word Count Distribution</div>
+  <div class="chart-grid cols-2">
+    <div class="card">
+      <h3>Text Length Histogram (chars)</h3>
+      <div class="chart-wrap"><canvas id="textHist" height="220"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Word Count Histogram</h3>
+      <div class="chart-wrap"><canvas id="wordHist" height="220"></canvas></div>
+    </div>
+  </div>
+
+  <!-- LABEL BREAKDOWN BY LANGUAGE -->
+  <div class="section-title">Language × Label Breakdown</div>
+  <div class="chart-grid cols-2">
+    <div class="card">
+      <h3>Label Split by Language</h3>
+      <div class="chart-wrap"><canvas id="langLabel" height="220"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Stacked Category × Label</h3>
+      <div class="chart-wrap"><canvas id="catLabelStacked" height="220"></canvas></div>
+    </div>
+  </div>
+
+  <!-- STATISTICAL METRICS TABLE -->
+  <div class="section-title">Descriptive Statistics Summary</div>
+  <div class="stat-table">
+    <div class="card">
+      <h3>Conversation Turns</h3>
+      <table>
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Count</td><td>94</td></tr>
+        <tr><td>Mean</td><td>17.79</td></tr>
+        <tr><td>Std Dev</td><td>9.33</td></tr>
+        <tr><td>Min</td><td>3</td></tr>
+        <tr><td>P5</td><td>3.0</td></tr>
+        <tr><td>P25 (Q1)</td><td>11.0</td></tr>
+        <tr><td>Median (P50)</td><td>18.0</td></tr>
+        <tr><td>P75 (Q3)</td><td>26.5</td></tr>
+        <tr><td>P90</td><td>29.0</td></tr>
+        <tr><td>P95</td><td>33.0</td></tr>
+        <tr><td>Max</td><td>35</td></tr>
+        <tr><td>IQR</td><td>15.5</td></tr>
+        <tr><td>Skewness</td><td>0.037 (near-symmetric)</td></tr>
+        <tr><td>Kurtosis</td><td>-1.079 (platykurtic)</td></tr>
+        <tr><td>IQR Outliers</td><td><span style="color:var(--accent2);font-weight:700">0 detected</span></td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Text Length (chars)</h3>
+      <table>
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Count</td><td>94</td></tr>
+        <tr><td>Mean</td><td>3,396</td></tr>
+        <tr><td>Std Dev</td><td>1,507</td></tr>
+        <tr><td>Min</td><td>440</td></tr>
+        <tr><td>P25 (Q1)</td><td>2,422</td></tr>
+        <tr><td>Median (P50)</td><td>3,497</td></tr>
+        <tr><td>P75 (Q3)</td><td>4,534</td></tr>
+        <tr><td>Max</td><td>6,648</td></tr>
+        <tr><td>IQR</td><td>2,112</td></tr>
+        <tr><td>Skewness</td><td>-0.224 (slight left skew)</td></tr>
+        <tr><td>Kurtosis</td><td>-0.658 (platykurtic)</td></tr>
+        <tr><td>IQR Outliers</td><td><span style="color:var(--accent2);font-weight:700">0 detected</span></td></tr>
+        <tr><td>Avg Words</td><td>604 words</td></tr>
+        <tr><td>Max Words</td><td>1,150 words</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- STATISTICAL TEST RESULTS -->
+  <div class="section-title">Statistical Tests</div>
+  <div class="card">
+    <table>
+      <tr><th>Test</th><th>Variable(s)</th><th>Statistic</th><th>p-value</th><th>Interpretation</th></tr>
+      <tr>
+        <td>Welch's T-Test</td><td>Turns by Label</td><td>t = 0.200</td>
+        <td><span style="color:var(--muted)">p = 0.842</span></td>
+        <td style="color:var(--muted)">No significant difference in turns between label 0 and label 1</td>
+      </tr>
+      <tr>
+        <td>Welch's T-Test</td><td>Text Length by Label</td><td>t = -0.193</td>
+        <td><span style="color:var(--muted)">p = 0.848</span></td>
+        <td style="color:var(--muted)">No significant difference in text length between labels</td>
+      </tr>
+      <tr>
+        <td>Chi² Test</td><td>Category × Label</td><td>χ² = 6.44</td>
+        <td><span style="color:var(--muted)">p = 0.696</span></td>
+        <td style="color:var(--muted)">Category not statistically predictive of label in isolation (small N)</td>
+      </tr>
+      <tr>
+        <td>Chi² Test</td><td>Language × Label</td><td>χ² = 1.05</td>
+        <td><span style="color:var(--muted)">p = 0.592</span></td>
+        <td style="color:var(--muted)">Language not associated with label</td>
+      </tr>
+      <tr>
+        <td>Risk vs Label Alignment</td><td>Risk × Label</td><td colspan="2"><span style="color:var(--accent2);font-weight:700">100% aligned</span></td>
+        <td style="color:var(--accent2);">Risk=high perfectly maps to label=1; Risk=low to label=0</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- KEY INSIGHTS -->
+  <div class="section-title">Key Findings & Actionable Insights</div>
+  <div class="insight-grid">
+    <div class="insight green">
+      <div class="title">✅ Perfect Label–Risk Alignment</div>
+      <div class="body">Risk and Label are <strong>100% correlated</strong>: every high-risk conversation is label=1, every low-risk is label=0. These two columns are redundant — use one as the ground truth target.</div>
+    </div>
+    <div class="insight danger">
+      <div class="title">⚠️ Class Near-Balance but Slight Imbalance</div>
+      <div class="body">Label 0 (55.3%) vs Label 1 (44.7%) — a <strong>~10% imbalance</strong>. Not severe, but monitor precision/recall for label=1 in model evaluation. Consider stratified splits.</div>
+    </div>
+    <div class="insight warn">
+      <div class="title">🔥 Suicide Category = Highest Risk Rate</div>
+      <div class="body"><strong>64.3% of Suicide conversations are label=1</strong> (9/14). Romantic/Sexual is 100% (1/1). These high-risk categories are underrepresented — only 15 combined rows.</div>
+    </div>
+    <div class="insight purple">
+      <div class="title">📊 No Outliers in Turns or Text Length</div>
+      <div class="body">IQR analysis found <strong>zero outliers</strong> in both Turns and Text Length. The distributions are platykurtic (flat) — conversations are spread evenly across the range, not concentrated.</div>
+    </div>
+    <div class="insight">
+      <div class="title">📉 Turns & Text: Not Predictive Alone</div>
+      <div class="body">Statistical tests show <strong>no significant difference</strong> in turns or text length between label 0 and 1 (p > 0.84). Conversation length alone is not a risk signal.</div>
+    </div>
+    <div class="insight green">
+      <div class="title">🌐 Language Mix is Realistic</div>
+      <div class="body"><strong>67% English, 18% French, 15% Mixed</strong>. The label=1 rate is consistent across all three languages — no language bias detected. Good for multilingual model robustness.</div>
+    </div>
+    <div class="insight warn">
+      <div class="title">📦 Small Dataset — 94 Rows</div>
+      <div class="body">This is a <strong>seed/validation set only</strong>. Several categories have very few examples (Hate-Speech: 1, Romantic/Sexual: 1, Grief/Loss: 1). Statistical power is limited — treat chi² results cautiously.</div>
+    </div>
+    <div class="insight danger">
+      <div class="title">🎯 Category Distribution is Skewed</div>
+      <div class="body"><strong>Social Relationships (29) and Isolation (26)</strong> dominate — 58% of all rows. Bullying, Grief, Hate-Speech, and Romantic categories have ≤2 rows each. Severe underrepresentation.</div>
+    </div>
+  </div>
+
+  <!-- CATEGORY TABLE -->
+  <div class="section-title">Full Category Breakdown Table</div>
+  <div class="card">
+    <table>
+      <tr><th>Category</th><th>Count</th><th>Share</th><th>Label=0</th><th>Label=1</th><th>High-Risk Rate</th><th>Avg Turns</th></tr>
+      <tr><td>Social Relationships & Friendships</td><td>29</td><td>30.9%</td><td>18</td><td>11</td><td>37.9%</td><td>19.1</td></tr>
+      <tr><td>Isolation (incl. Digital Loneliness)</td><td>26</td><td>27.7%</td><td>15</td><td>11</td><td>42.3%</td><td>17.2</td></tr>
+      <tr><td>Suicide</td><td>14</td><td>14.9%</td><td>5</td><td>9</td><td><strong style="color:var(--danger)">64.3%</strong></td><td>17.6</td></tr>
+      <tr><td>School & Studies</td><td>9</td><td>9.6%</td><td>4</td><td>5</td><td>55.6%</td><td>16.3</td></tr>
+      <tr><td>Puberty & Life Changes</td><td>6</td><td>6.4%</td><td>4</td><td>2</td><td>33.3%</td><td>23.0</td></tr>
+      <tr><td>Identity & Belonging</td><td>5</td><td>5.3%</td><td>3</td><td>2</td><td>40.0%</td><td>16.2</td></tr>
+      <tr><td>Bullying / Harassment</td><td>2</td><td>2.1%</td><td>1</td><td>1</td><td>50.0%</td><td>9.0</td></tr>
+      <tr><td>Romantic / Sexual Relationships</td><td>1</td><td>1.1%</td><td>0</td><td>1</td><td><strong style="color:var(--danger)">100%</strong></td><td>7.0</td></tr>
+      <tr><td>Hate-Speech</td><td>1</td><td>1.1%</td><td>1</td><td>0</td><td>0%</td><td>13.0</td></tr>
+      <tr><td>Grief / Loss</td><td>1</td><td>1.1%</td><td>1</td><td>0</td><td>0%</td><td>21.0</td></tr>
+    </table>
+  </div>
+
+</div>
+<script>
+const BLUE='#2f81f7', GREEN='#3fb950', RED='#f85149', PURPLE='#d2a8ff', ORANGE='#ffa657', YELLOW='#e3b341', TEAL='#39d353';
+const defaults = { plugins: { legend: { labels: { color: '#8b949e', font: { size: 12 } } } }, scales: {} };
+Chart.defaults.color = '#8b949e';
+Chart.defaults.borderColor = '#30363d';
+
+// 1. Label Pie
+new Chart(document.getElementById('labelPie'), { type:'doughnut', data:{ labels:['Label 0 (Low Risk)','Label 1 (High Risk)'], datasets:[{ data:[52,42], backgroundColor:[GREEN, RED], borderWidth:2, borderColor:'#161b22' }] }, options:{ plugins:{ legend:{ position:'bottom', labels:{ color:'#8b949e' } } }, cutout:'65%' } });
+
+// 2. Risk Pie
+new Chart(document.getElementById('riskPie'), { type:'doughnut', data:{ labels:['Low','High'], datasets:[{ data:[52,42], backgroundColor:[GREEN, RED], borderWidth:2, borderColor:'#161b22' }] }, options:{ plugins:{ legend:{ position:'bottom', labels:{ color:'#8b949e' } } }, cutout:'65%' } });
+
+// 3. Lang Pie
+new Chart(document.getElementById('langPie'), { type:'doughnut', data:{ labels:['English (en)','French (fr)','Mixed (mix)'], datasets:[{ data:[63,17,14], backgroundColor:[BLUE, PURPLE, ORANGE], borderWidth:2, borderColor:'#161b22' }] }, options:{ plugins:{ legend:{ position:'bottom', labels:{ color:'#8b949e' } } }, cutout:'65%' } });
+
+// 4. Category bar
+const cats = ['Social Rel.','Isolation','Suicide','School','Puberty','Identity','Bullying','Romantic','Hate-Speech','Grief'];
+const catCounts = [29,26,14,9,6,5,2,1,1,1];
+new Chart(document.getElementById('catBar'), { type:'bar', data:{ labels:cats, datasets:[{ label:'Count', data:catCounts, backgroundColor: catCounts.map((_,i)=>`hsl(${210+i*18},70%,55%)`), borderRadius:4 }] }, options:{ indexAxis:'y', plugins:{ legend:{ display:false } }, scales:{ x:{ grid:{ color:'#21262d' } }, y:{ grid:{ color:'#21262d' }, ticks:{ color:'#8b949e', font:{size:11} } } } } });
+
+// 5. Category risk rate
+const riskRates = [37.9, 42.3, 64.3, 55.6, 33.3, 40.0, 50.0, 100, 0, 0];
+new Chart(document.getElementById('catRisk'), { type:'bar', data:{ labels:cats, datasets:[{ label:'% High Risk (label=1)', data:riskRates, backgroundColor: riskRates.map(v => v > 60 ? RED : v > 40 ? YELLOW : GREEN), borderRadius:4 }] }, options:{ indexAxis:'y', plugins:{ legend:{ display:false } }, scales:{ x:{ max:100, grid:{ color:'#21262d' }, ticks:{ callback: v => v+'%' } }, y:{ grid:{ color:'#21262d' }, ticks:{ color:'#8b949e', font:{size:11} } } } } });
+
+// 6. Turns histogram
+const turnBins = ['3-5','6-8','9-11','12-14','15-17','18-20','21-23','24-26','27-29','30-32','33-35'];
+const turnFreq = [5, 5, 10, 9, 12, 12, 9, 11, 10, 6, 5];
+new Chart(document.getElementById('turnsHist'), { type:'bar', data:{ labels:turnBins, datasets:[{ label:'Conversations', data:turnFreq, backgroundColor:BLUE+'aa', borderColor:BLUE, borderWidth:1, borderRadius:3 }] }, options:{ plugins:{ legend:{ display:false } }, scales:{ x:{ grid:{ color:'#21262d' }, title:{ display:true, text:'Turns Range', color:'#8b949e' } }, y:{ grid:{ color:'#21262d' } } } } });
+
+// 7. Turns by label (grouped bar: min/q1/median/q3/max style)
+new Chart(document.getElementById('turnsByLabel'), { type:'bar', data:{ labels:['Min','Q1','Median','Q3','Max','Mean'], datasets:[ { label:'Label 0 (Low Risk)', data:[3,10,19,27,35,17.96], backgroundColor:GREEN+'99', borderColor:GREEN, borderWidth:1, borderRadius:3 }, { label:'Label 1 (High Risk)', data:[3,11.5,16,23,35,17.57], backgroundColor:RED+'99', borderColor:RED, borderWidth:1, borderRadius:3 } ] }, options:{ plugins:{ legend:{ labels:{ color:'#8b949e' } } }, scales:{ x:{ grid:{ color:'#21262d' } }, y:{ grid:{ color:'#21262d' }, title:{ display:true, text:'Turns', color:'#8b949e' } } } } });
+
+// 8. Avg turns by category
+const catTurns = [19.1, 17.2, 17.6, 16.3, 23.0, 16.2, 9.0, 7.0, 13.0, 21.0];
+new Chart(document.getElementById('turnsCat'), { type:'bar', data:{ labels:cats, datasets:[{ label:'Avg Turns', data:catTurns, backgroundColor:PURPLE+'99', borderColor:PURPLE, borderWidth:1, borderRadius:3 }] }, options:{ plugins:{ legend:{ display:false } }, scales:{ x:{ grid:{ color:'#21262d' }, ticks:{ color:'#8b949e', maxRotation:30, font:{size:11} } }, y:{ grid:{ color:'#21262d' }, beginAtZero:true } } } });
+
+// 9. Text length histogram
+const textBins=['<1k','1-2k','2-3k','3-4k','4-5k','5-6k','6k+'];
+const textFreq=[2,11,25,21,18,12,5];
+new Chart(document.getElementById('textHist'), { type:'bar', data:{ labels:textBins, datasets:[{ label:'Conversations', data:textFreq, backgroundColor:ORANGE+'aa', borderColor:ORANGE, borderWidth:1, borderRadius:3 }] }, options:{ plugins:{ legend:{ display:false } }, scales:{ x:{ grid:{ color:'#21262d' }, title:{ display:true, text:'Text Length (chars)', color:'#8b949e' } }, y:{ grid:{ color:'#21262d' } } } } });
+
+// 10. Word count histogram
+const wordBins=['<200','200-400','400-600','600-800','800-1000','1000+'];
+const wordFreq=[3,13,26,24,18,10];
+new Chart(document.getElementById('wordHist'), { type:'bar', data:{ labels:wordBins, datasets:[{ label:'Conversations', data:wordFreq, backgroundColor:TEAL+'aa', borderColor:TEAL, borderWidth:1, borderRadius:3 }] }, options:{ plugins:{ legend:{ display:false } }, scales:{ x:{ grid:{ color:'#21262d' }, title:{ display:true, text:'Word Count', color:'#8b949e' } }, y:{ grid:{ color:'#21262d' } } } } });
+
+// 11. Language × Label grouped bar
+new Chart(document.getElementById('langLabel'), { type:'bar', data:{ labels:['English (n=63)','French (n=17)','Mixed (n=14)'], datasets:[ { label:'Label 0', data:[36,10,6], backgroundColor:GREEN+'99', borderColor:GREEN, borderWidth:1, borderRadius:3 }, { label:'Label 1', data:[27,7,8], backgroundColor:RED+'99', borderColor:RED, borderWidth:1, borderRadius:3 } ] }, options:{ plugins:{ legend:{ labels:{ color:'#8b949e' } } }, scales:{ x:{ grid:{ color:'#21262d' } }, y:{ grid:{ color:'#21262d' } } } } });
+
+// 12. Category × Label stacked
+const topCats = ['Social Rel.','Isolation','Suicide','School','Puberty','Identity'];
+new Chart(document.getElementById('catLabelStacked'), { type:'bar', data:{ labels:topCats, datasets:[ { label:'Label 0', data:[18,15,5,4,4,3], backgroundColor:GREEN+'bb', borderColor:GREEN, borderWidth:1 }, { label:'Label 1', data:[11,11,9,5,2,2], backgroundColor:RED+'bb', borderColor:RED, borderWidth:1 } ] }, options:{ plugins:{ legend:{ labels:{ color:'#8b949e' } } }, scales:{ x:{ stacked:true, grid:{ color:'#21262d' }, ticks:{ font:{size:10} } }, y:{ stacked:true, grid:{ color:'#21262d' } } } } });
+</script>
+</body>
+</html>
